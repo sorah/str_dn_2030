@@ -45,6 +45,8 @@ module StrDn2030
       @listeners_lock = Mutex.new
 
       @inputs = {}
+      @statuses = {}
+
       @volumes_proxy = ArefProxy.new(self, 'volume')
       @active_inputs_proxy = ArefProxy.new(self, 'active_input')
     end
@@ -104,10 +106,18 @@ module StrDn2030
       end
     end
 
+    def reload
+      reload_input
+      @statuses = {}
+      self
+    end
+
     def status(zone_id = 0)
-      zone = zone_id.chr('ASCII-8BIT')
-      send "\x02\x03\xA0\x82".b + zone + "\x00".b
-      listen(:status, zone_id)
+      @statuses[zone_id] || begin
+        zone = zone_id.chr('ASCII-8BIT')
+        send "\x02\x03\xA0\x82".b + zone + "\x00".b
+        listen(:status, zone_id)
+      end
     end
 
     def volume_get(zone_id, type = "\x03".b)
@@ -245,7 +255,9 @@ module StrDn2030
         headphone: flag1[2] == 1,
         unknown_6: flag1[5],
       }
-      data = {zone: m['zone'], ch: {audio: m['ch'], video: m['ch2']}, flags: flags}
+      data = @statuses[m['zone'].ord] = {
+        zone: m['zone'], ch: {audio: m['ch'], video: m['ch2']}, flags: flags
+      }
 
       delegate(:status, m['zone'].ord, data)
     end
