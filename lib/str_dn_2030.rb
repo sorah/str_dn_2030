@@ -20,6 +20,9 @@ module StrDn2030
   end
 
   class Remote
+    VOLUME_STATUS_REGEXP = /\x02\x06\xA8\x92(?<zone>.)(?<type>.)(?<volume>..)./nm
+    STATUS_REGEXP = /\x02\x07\xA8\x82(?<zone>.)(?<ch>.)(?<ch2>.)(?<flag1>.)(?<unused>.)./nm
+
     INPUT_REGEXP = /(?<index>.)(?<audio>.)(?<video>.)(?<icon>.)(?<preset_name>.{8})(?<name>.{8})(?<skip>.)/mn
     INPUTLIST_REGEXP = Regexp.new(
       '\x02\xD7\xA8\x8B(?<zone>.)' \
@@ -195,9 +198,8 @@ module StrDn2030
         hit = false
         buffer << chunk.b
 
-        handle.(/\x02\x07\xA8\x82(?<zone>.)(?<ch>.)(?<ch2>.)(?<flag1>.)(?<unused>.)./nm,
-                &method(:handle_status))
-        handle.(/\x02\x06\xA8\x92(?<zone>.)(?<type>.)(?<volume>..)./nm, &method(:handle_volume_status))
+        handle.(STATUS_REGEXP, &method(:handle_status))
+        handle.(VOLUME_STATUS_REGEXP, &method(:handle_volume_status))
         handle.(INPUTLIST_REGEXP, &method(:handle_input_list))
 
         handle.(/\A\xFD/n) { delegate(:success) }
