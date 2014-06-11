@@ -195,67 +195,13 @@ module StrDn2030
         hit = false
         buffer << chunk.b
 
-        handle.(/\x02\x07\xA8\x82(?<zone>.)(?<ch>.)(?<ch2>.)(?<flag1>.)(?<unused>.)./nm) do |m|
-          # status
-          flag1 = m['flag1'].ord
-          flags = {
-            raw: [m['flag1']].map{ |_| _.ord.to_s(2).rjust(8,' ') },
-            power: flag1[0] == 1,
-            mute: flag1[1] == 1,
-            headphone: flag1[2] == 1,
-            unknown_6: flag1[5],
-          }
-          data = {zone: m['zone'], ch: {audio: m['ch'], video: m['ch2']}, flags: flags}
+        handle.(/\x02\x07\xA8\x82(?<zone>.)(?<ch>.)(?<ch2>.)(?<flag1>.)(?<unused>.)./nm,
+                &method(:handle_status))
+        handle.(/\x02\x06\xA8\x92(?<zone>.)(?<type>.)(?<volume>..)./nm, &method(:handle_volume_status))
+        handle.(INPUTLIST_REGEXP, &method(:handle_input_list))
 
-          delegate(:status, m['zone'].ord, data)
-        end
-
-        handle.(/\x02\x06\xA8\x92(?<zone>.)(?<type>.)(?<volume>..)./nm) do |m|
-          # volume status
-          data = {zone: m['zone'], type: m['type'], volume: m['volume'].unpack('s>').first}
-          delegate(:volume, m['zone'].ord, data)
-        end
-
-        handle.(INPUTLIST_REGEXP) do |m|
-          #p m
-          inputs = {}
-          m['inputs'].scan(INPUT_REGEXP).each do |input|
-            idx, audio, video, icon, preset_name, name, skip_flags = input
-
-            name.strip!
-            preset_name.strip!
-
-            skip = {raw: skip_flags}.tap do |_|
-              _.merge({
-                "\x11" => {watch: true,  listen: true},
-                "\x21" => {watch: true,  listen: true},
-                "\x30" => {watch: false, listen: false},
-                "\x10" => {watch: false, listen: true},
-                "\x20" => {watch: true,  listen: false},
-              }[skip_flags] || {})
-            end
-
-            inputs[name] = inputs[audio] = inputs[video] = {
-              index: idx,
-              audio: audio,
-              video: video,
-              icon: icon,
-              preset_name: preset_name,
-              name: name,
-              skip: skip,
-            }
-          end
-          (@inputs[m['zone'].ord] ||= {}).merge! inputs
-          delegate :input_list, m['zone'].ord, inputs
-        end
-
-        handle.(/\A\xFD/n) do
-          delegate :success
-        end
-
-        handle.(/\A\xFE/n) do
-          delegate :error
-        end
+        handle.(/\A\xFD/n) { delegate(:success) }
+        handle.(/\A\xFE/n) { delegate(:error) }
 
         debug([:buffer_ramain, buffer]) if hit && !buffer.empty?
       end
@@ -276,6 +222,58 @@ module StrDn2030
         end
         @listeners[type].clear
       end
+    end
+
+    def handle_status(m)
+      flag1 = m['flag1'].ord
+      flags = {
+        raw: [m['flag1']].map{ |_| _.ord.to_s(2).rjust(8,' ') },
+        power: flag1[0] == 1,
+        mute: flag1[1] == 1,
+        headphone: flag1[2] == 1,
+        unknown_6: flag1[5],
+      }
+      data = {zone: m['zone'], ch: {audio: m['ch'], video: m['ch2']}, flags: flags}
+
+      delegate(:status, m['zone'].ord, data)
+    end
+
+    def handle_volume_status(m)
+      data = {zone: m['zone'], type: m['type'], volume: m['volume'].unpack('s>').first}
+      delegate(:volume, m['zone'].ord, data)
+    end
+
+    def handle_input_list(m)
+      #p m
+      inputs = {}
+      m['inputs'].scan(INPUT_REGEXP).each do |input|
+        idx, audio, video, icon, preset_name, name, skip_flags = input
+
+        name.strip!
+        preset_name.strip!
+
+        skip = {raw: skip_flags}.tap do |_|
+          _.merge({
+            "\x11" => {watch: true,  listen: true},
+            "\x21" => {watch: true,  listen: true},
+            "\x30" => {watch: false, listen: false},
+            "\x10" => {watch: false, listen: true},
+            "\x20" => {watch: true,  listen: false},
+          }[skip_flags] || {})
+        end
+
+        inputs[name] = inputs[audio] = inputs[video] = {
+          index: idx,
+          audio: audio,
+          video: video,
+          icon: icon,
+          preset_name: preset_name,
+          name: name,
+          skip: skip,
+        }
+      end
+      (@inputs[m['zone'].ord] ||= {}).merge! inputs
+      delegate :input_list, m['zone'].ord, inputs
     end
   end
 end
