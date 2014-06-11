@@ -55,6 +55,21 @@ module StrDn2030
       end
     end
 
+    def listen(type, filter = nil)
+      Thread.current[:strdn2030_filter] = filter
+      @listeners_lock.synchronize {
+        @listeners[type] ||= []
+        @listeners[type] << Thread.current
+      }
+
+      sleep
+
+      data = Thread.current[:strdn2030_data]
+      Thread.current[:strdn2030_data] = nil
+      data
+    end
+
+
     def connected?
       !!@socket
     end
@@ -139,19 +154,6 @@ module StrDn2030
       active_input_set(0, other)
     end
 
-    def listen(type, filter = nil)
-      Thread.current[:strdn2030_filter] = filter
-      @listeners_lock.synchronize {
-        @listeners[type] ||= []
-        @listeners[type] << Thread.current
-      }
-
-      sleep
-
-      data = Thread.current[:strdn2030_data]
-      Thread.current[:strdn2030_data] = nil
-      data
-    end
 
     def reload_input
       @inputs = {}
