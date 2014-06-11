@@ -50,6 +50,10 @@ module StrDn2030
 
     attr_reader :inputs
 
+    def inspect
+      "#<#{self.class.name}: #{@host}:#{@port}>"
+    end
+
     def hook(&block)
       if block_given?
         @hook = block
