@@ -1,25 +1,10 @@
 require 'str_dn_2030/version'
 require 'str_dn_2030/input'
+require 'str_dn_2030/zone'
 require 'socket'
 require 'thread'
 
 module StrDn2030
-  class ArefProxy
-    def initialize(parent, name)
-      @parent = parent
-      @set = :"#{name}_set"
-      @get = :"#{name}_get"
-    end
-
-    def [](*args)
-      @parent.__send__ @get, *args
-    end
-
-    def []=(*args)
-      @parent.__send__ @set, *args
-    end
-  end
-
   class Remote
     VOLUME_STATUS_REGEXP = /\x02\x06\xA8\x92(?<zone>.)(?<type>.)(?<volume>..)./nm
     STATUS_REGEXP = /\x02\x07\xA8\x82(?<zone>.)(?<ch>.)(?<ch2>.)(?<flag1>.)(?<unused>.)./nm
@@ -46,9 +31,6 @@ module StrDn2030
 
       @inputs = {}
       @statuses = {}
-
-      @volumes_proxy = ArefProxy.new(self, 'volume')
-      @active_inputs_proxy = ArefProxy.new(self, 'active_input')
     end
 
     attr_reader :inputs, :host, :port
@@ -112,7 +94,13 @@ module StrDn2030
       self
     end
 
-    def status(zone_id = 0)
+    def zone(zone_id)
+      Zone.new(self, zone_id.is_a?(String) ? zone_id.ord : zone_id.to_i)
+    end
+
+    #### These are private api
+
+    def status_get(zone_id = 0)
       @statuses[zone_id] || begin
         zone = zone_id.chr('ASCII-8BIT')
         send "\x02\x03\xA0\x82".b + zone + "\x00".b
@@ -133,18 +121,6 @@ module StrDn2030
       other
     end
 
-    def volume
-      volume_get(0)
-    end
-
-    def volume=(other)
-      volume_set(0, other)
-    end
-
-    def volumes
-      @volumes_proxy
-    end
-
     def active_input_get(zone_id)
       current = status(zone_id)[:ch][:video]
       inputs[zone_id][current] || self.reload_input.inputs[zone_id][current]
@@ -152,6 +128,7 @@ module StrDn2030
 
     def active_input_set(zone_id, other)
       new_input = if other.is_a?(Input)
+        raise ArgumentError, "#{other.inspect} is not in zone #{zone_id}" unless input.zone == zone_id
         other
       else
         inputs[zone_id][other] || self.reload_input.inputs[zone_id][other]
@@ -164,19 +141,6 @@ module StrDn2030
       listen(:success)
       other
     end
-
-    def active_inputs
-      @active_inputs_proxy
-    end
-
-    def active_input
-      active_input_get(0)
-    end
-
-    def active_input=(other)
-      active_input_set(0, other)
-    end
-
 
     def reload_input
       @inputs = {}
