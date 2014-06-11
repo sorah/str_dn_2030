@@ -275,6 +275,10 @@ module StrDn2030
       (@inputs[m['zone'].ord] ||= {}).merge! inputs
       delegate :input_list, m['zone'].ord, inputs
     end
+
+    def debug(*args)
+      p(*args) if ENV["STR_DN_2030_DEBUG"]
+    end
   end
 end
 
