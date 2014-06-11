@@ -28,6 +28,22 @@ module StrDn2030
       nil
     end
 
+    def skipped?
+      skip[:watch] && skip[:listen]
+    end
+
+    def watch_skipped?
+      skip[:watch]
+    end
+
+    def listen_skipped?
+      skip[:listen]
+    end
+
+    def skipped_any?
+      skip[:watch] || skip[:listen]
+    end
+
     def skip
       @skip ||= begin
         {raw: skip_flags}.tap do |_|
@@ -42,5 +58,4 @@ module StrDn2030
       end
     end
   end
-
 end
