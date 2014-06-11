@@ -1,4 +1,5 @@
 require 'str_dn_2030/version'
+require 'str_dn_2030/input'
 require 'socket'
 require 'thread'
 
@@ -48,7 +49,7 @@ module StrDn2030
       @active_inputs_proxy = ArefProxy.new(self, 'active_input')
     end
 
-    attr_reader :inputs
+    attr_reader :inputs, :host, :port
 
     def inspect
       "#<#{self.class.name}: #{@host}:#{@port}>"
@@ -140,11 +141,16 @@ module StrDn2030
     end
 
     def active_input_set(zone_id, other)
-      new_input = inputs[zone_id][other] || self.reload_input.inputs[zone_id][other]
+      new_input = if other.is_a?(Input)
+        other
+      else
+        inputs[zone_id][other] || self.reload_input.inputs[zone_id][other]
+      end
+
       raise ArgumentError, "#{other.inspect} not exists" unless new_input
       
       zone = zone_id.chr('ASCII-8BIT')
-      send "\x02\x04\xa0\x42".b + zone + new_input[:video].b + "\x00".b
+      send "\x02\x04\xa0\x42".b + zone + new_input.video + "\x00".b
       listen(:success)
       other
     end
@@ -252,34 +258,25 @@ module StrDn2030
     def handle_input_list(m)
       #p m
       inputs = {}
-      m['inputs'].scan(INPUT_REGEXP).each do |input|
-        idx, audio, video, icon, preset_name, name, skip_flags = input
+      zone = m['zone'].ord
+      m['inputs'].scan(INPUT_REGEXP).each do |input_line|
+        idx, audio, video, icon, preset_name, name, skip_flags = input_line
 
-        name.strip!
-        preset_name.strip!
-
-        skip = {raw: skip_flags}.tap do |_|
-          _.merge({
-            "\x11" => {watch: true,  listen: true},
-            "\x21" => {watch: true,  listen: true},
-            "\x30" => {watch: false, listen: false},
-            "\x10" => {watch: false, listen: true},
-            "\x20" => {watch: true,  listen: false},
-          }[skip_flags] || {})
-        end
-
-        inputs[name] = inputs[audio] = inputs[video] = {
-          index: idx,
-          audio: audio,
-          video: video,
-          icon: icon,
-          preset_name: preset_name,
-          name: name,
-          skip: skip,
-        }
+        input = inputs[audio] = inputs[video] = Input.new(
+          self,
+          zone,
+          idx,
+          audio,
+          video,
+          icon,
+          preset_name,
+          name,
+          skip_flags,
+        )
+        inputs[input.name] = input
       end
-      (@inputs[m['zone'].ord] ||= {}).merge! inputs
-      delegate :input_list, m['zone'].ord, inputs
+      (@inputs[zone] ||= {}).merge! inputs
+      delegate :input_list, zone, inputs
     end
 
     def debug(*args)
