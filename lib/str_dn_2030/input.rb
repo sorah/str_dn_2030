@@ -28,6 +28,10 @@ module StrDn2030
       nil
     end
 
+    def active?
+      parent.zone(self.zone).active_input == self
+    end
+
     def skipped?
       skip[:watch] && skip[:listen]
     end
@@ -56,6 +60,24 @@ module StrDn2030
           }[skip_flags] || {})
         end
       end
+    end
+
+    def ==(other)
+      other.is_a?(self.class) && self.video == other.video && self.audio == other.audio
+    end
+
+    def as_json
+      {
+        zone: zone,
+        index: index,
+        audio: audio,
+        video: video,
+        icon: icon,
+        preset_name: preset_name,
+        name: name,
+        skip: skip,
+        active: active?,
+      }
     end
   end
 end
