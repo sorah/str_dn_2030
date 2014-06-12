@@ -196,7 +196,7 @@ module StrDn2030
         handle.(/\A\xFD/n) { delegate(:success) }
         handle.(/\A\xFE/n) { delegate(:error) }
 
-        debug([:buffer_ramain, buffer]) if hit && !buffer.empty?
+        debug([:buffer_remain, buffer]) if hit && !buffer.empty?
       end
     end
 
