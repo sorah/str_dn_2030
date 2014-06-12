@@ -122,7 +122,7 @@ module StrDn2030
     end
 
     def active_input_get(zone_id)
-      current = status(zone_id)[:ch][:video]
+      current = status_get(zone_id)[:ch][:video]
       inputs[zone_id][current] || self.reload_input.inputs[zone_id][current]
     end
 

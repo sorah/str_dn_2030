@@ -40,11 +40,11 @@ module StrDn2030
       end
 
       def active_video
-        parent.active_video_get(zone_id)
+        parent.active_input_get(zone_id)
       end
 
       def active_video=(other)
-        parent.active_video_set(zone_id, other)
+        parent.active_input_set(zone_id, other)
       end
 
       alias active_input  active_video
