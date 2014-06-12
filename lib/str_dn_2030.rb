@@ -142,6 +142,13 @@ module StrDn2030
       other
     end
 
+    def mute_set(zone_id, new_mute)
+      zone = zone_id.chr('ASCII-8BIT')
+      send "\x02\x04\xa0\x53".b + zone + (new_mute ? "\x01".b : "\x00".b) + "\x00".b
+      listen(:success)
+      new_mute
+    end
+
     def reload_input
       @inputs = {}
       get_input_list(0, 0)

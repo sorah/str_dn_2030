@@ -27,6 +27,10 @@ module StrDn2030
         parent.status_get(zone_id)[:flags][:mute]
       end
 
+      def mute=(other)
+        parent.mute_set(zone_id, other)
+      end
+
       def headphone?
         parent.status_get(zone_id)[:flags][:headphone]
       end
