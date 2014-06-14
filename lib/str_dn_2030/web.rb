@@ -133,7 +133,7 @@ module StrDn2030
       volume = json_params['volume'] || params[:volume]
       if volume
         volume = volume.to_i
-        if max_volume < volume
+        if max_volume && (max_volume < volume)
           content_type :json
           status 400
           return {error: "over max volume #{max_volume}, given #{volume}"}.to_json
