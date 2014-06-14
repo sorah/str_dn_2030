@@ -83,24 +83,31 @@ module StrDn2030
     end
 
     put '/zones/:zone/active' do
+      content_type :json
+
       zone = remote.zone(params[:zone].to_i)
       json_params = if request.content_type == 'application/json'
                 JSON.parse(request.body.read)
               else
                 {}
               end
-      input = zone.inputs[json_params['input'] || params[:input]]
+      query = json_params['input'] || params[:input]
+      input = zone.inputs[query]
+
+      unless input
+        pattern = Regexp.new(query, 'i')
+        input = zone.inputs.values.uniq.find { |_| pattern === _.name }
+      end
 
       unless input
         status 400
-        content_type :json
         return {error: 'no input found'}.to_json
       end
 
       input.activate!
 
-      status 204
-      ''
+      status 200
+      {input: input.as_json}.to_json
     end
 
     get '/zones/:zone/volume' do
