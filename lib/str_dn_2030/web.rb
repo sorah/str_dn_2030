@@ -41,10 +41,9 @@ module StrDn2030
     get '/zones/:zone/inputs' do
       content_type :json
       zone = remote.zone(params[:zone].to_i)
+      inputs = Hash[zone.inputs.values.uniq.map { |input| [input.name, input.as_json] }]
       {
-        inputs: Hash[zone.inputs.values.uniq do |input|
-          [input.name, input.as_json]
-        end]
+        inputs: inputs
       }.to_json
     end
 
