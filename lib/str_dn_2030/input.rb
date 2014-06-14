@@ -51,13 +51,13 @@ module StrDn2030
     def skip
       @skip ||= begin
         {raw: skip_flags}.tap do |_|
-          _.merge({
-            "\x11" => {watch: true,  listen: true},
-            "\x21" => {watch: true,  listen: true},
-            "\x30" => {watch: false, listen: false},
-            "\x10" => {watch: false, listen: true},
-            "\x20" => {watch: true,  listen: false},
-          }[skip_flags] || {})
+          _.merge!({
+            "\x11".b => {watch: true,  listen: true},
+            "\x21".b => {watch: true,  listen: true},
+            "\x30".b => {watch: false, listen: false},
+            "\x10".b => {watch: false, listen: true},
+            "\x20".b => {watch: true,  listen: false},
+          }[skip_flags.b] || {})
         end
       end
     end
