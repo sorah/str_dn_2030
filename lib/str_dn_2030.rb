@@ -24,6 +24,7 @@ module StrDn2030
       @receiver_thread = nil
 
       @lock = Mutex.new
+      @receiver_lock = Mutex.new
       @hook = nil
 
       @listeners = {}
@@ -71,8 +72,7 @@ module StrDn2030
 
       @lock.synchronize do
         @socket = TCPSocket.open(@host, @port)
-        @receiver_thread = Thread.new(@socket, &method(:receiver))
-        @receiver_thread.abort_on_exception = true
+        start_receiver
         reload_input
         self
       end
@@ -82,9 +82,8 @@ module StrDn2030
       @lock.synchronize do
         return unless @socket
         @socket.close unless @socket.closed?
-        @receiver_thread.kill if @receiver_thread.alive?
         @socket = nil
-        @receiver_thread = nil
+        stop_receiver
       end
     end
 
@@ -164,11 +163,34 @@ module StrDn2030
 
     private
 
+    def receiver_alive?
+      @receiver_thread && @receiver_thread.alive?
+    end
+
+    def start_receiver(if_dead=false)
+      return if if_dead && receiver_alive?
+      stop_receiver
+      @receiver_lock.synchronize do
+        debug [:start_receiver]
+        @receiver_thread = Thread.new(@socket, &method(:receiver))
+        @receiver_thread.abort_on_exception = true
+      end
+    end
+
+    def stop_receiver
+      @receiver_lock.synchronize do
+        debug [:stop_receiver]
+        @receiver_thread.kill if receiver_alive?
+        @receiver_thread = nil
+      end
+    end
+
     def get_input_list(zone_id, page = 0)
       send("\x02\x04\xa0\x8b".b + zone_id.chr('ASCII-8BIT') + page.chr('ASCII-8BIT') + "\x00".b)
     end
 
     def send(str)
+      start_receiver(true)
       debug [:send, str]
       @socket.write str
     end
