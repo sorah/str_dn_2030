@@ -115,7 +115,7 @@ module StrDn2030
 
     def volume_set(zone_id, other, type = "\x03".b)
       zone = zone_id.chr('ASCII-8BIT')
-      send "\x02\x06\xa0\x52" + zone + type + [other.to_i].pack('s>') + "\x00".b
+      send "\x02\x06\xa0\x52".b + zone + type + [other.to_i].pack('s>') + "\x00".b
       listen(:success)
       other
     end
