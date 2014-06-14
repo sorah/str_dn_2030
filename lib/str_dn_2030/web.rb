@@ -135,8 +135,9 @@ module StrDn2030
         zone.volume = volume
       end
 
-      mute = json_params['mute'] || params[:mute]
+      mute = json_params.key?('mute') ? json_params['mute'] : params[:mute]
       unless mute.nil?
+        p mute
         zone.mute = mute
       end
 
