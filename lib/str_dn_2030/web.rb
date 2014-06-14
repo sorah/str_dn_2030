@@ -129,7 +129,7 @@ module StrDn2030
         if max_volume < volume
           content_type :json
           status 400
-          return {error: "over max volume #{max_volume}, given #{volume}"}
+          return {error: "over max volume #{max_volume}, given #{volume}"}.to_json
         end
 
         zone.volume = volume

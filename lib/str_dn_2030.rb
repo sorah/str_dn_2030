@@ -127,7 +127,7 @@ module StrDn2030
 
     def active_input_set(zone_id, other)
       new_input = if other.is_a?(Input)
-        raise ArgumentError, "#{other.inspect} is not in zone #{zone_id}" unless input.zone == zone_id
+        raise ArgumentError, "#{other.inspect} is not in zone #{zone_id}" unless other.zone == zone_id
         other
       else
         inputs[zone_id][other] || self.reload_input.inputs[zone_id][other]

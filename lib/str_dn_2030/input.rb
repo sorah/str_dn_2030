@@ -24,7 +24,7 @@ module StrDn2030
     end
 
     def activate!
-      parent.active_input = self
+      parent.zone(self.zone).active_input = self
       nil
     end
 
