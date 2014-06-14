@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = StrDn2030::VERSION
   spec.authors       = ["Shota Fukumori (sora_h)"]
   spec.email         = ["her@sorah.jp"]
-  spec.summary       = %q{TODO: Write a short summary. Required.}
-  spec.description   = %q{TODO: Write a longer description. Optional.}
+  spec.summary       = %q{Control your STR-DN-2030}
+  spec.description   = %q{Control STR-DN-2030 via TCP.}
   spec.homepage      = ""
   spec.license       = "MIT"
 
