@@ -22,7 +22,7 @@ Or install it yourself as:
 ``` ruby
 require 'str_dn_2030'
 
-remote = StrDn2030.new('x.x.x.x') # pass your amp's IP address
+remote = StrDn2030::Remote.new('x.x.x.x') # pass your amp's IP address
 remote.connect
 
 zone = remote.zones(0) # main zone
